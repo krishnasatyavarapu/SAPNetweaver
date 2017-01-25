@@ -1,0 +1,163 @@
+*&---------------------------------------------------------------------*
+*& Report  ZAA_RUN_BDLS_PARALLEL
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+report zaa_run_bdls_parallel_fs.
+
+selection-screen begin of line.
+selection-screen comment (50) commtab for field ltable.
+parameters ltable(30) type c default '' obligatory .
+selection-screen end of line.
+
+
+data l_variant_name(14) type c.
+
+data: d_jobcount like tbtcjob-jobcount,
+      d_jobname like tbtcjob-jobname.
+
+data: begin of l_s_bdlstab,
+        variantname(30) type c,
+      end of l_s_bdlstab.
+
+data l_t_bdlstabs like table of  l_s_bdlstab.
+
+initialization.
+  perform selection_screen_text.
+
+at selection-screen.
+
+*********************************************************************
+*Insert the relevant variants for testing....
+*********************************************************************
+  if  ltable ca 'A' or ltable ca '@'.
+
+    l_s_bdlstab-variantname = 'ZAA_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+  if  ltable ca 'B' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZBB_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+  if  ltable ca 'C' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZCC_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+  if  ltable ca 'D' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZDD_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+  if  ltable ca 'E' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZEE_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+ if  ltable ca 'F' or ltable ca '@'.
+
+    l_s_bdlstab-variantname = 'ZFF_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+  if  ltable ca 'G' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZGG_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+  if  ltable ca 'H' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZHH_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+  if  ltable ca 'I' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZII_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+  if  ltable ca 'J' or ltable ca '@'.
+    l_s_bdlstab-variantname = 'ZJJ_PUREBDLS'.
+    insert l_s_bdlstab into table l_t_bdlstabs.
+    clear l_s_bdlstab.
+  endif.
+
+  loop at l_t_bdlstabs into l_s_bdlstab.
+
+
+
+    d_jobname = l_s_bdlstab-variantname.
+
+    call function 'JOB_OPEN'
+      exporting
+        jobname          = d_jobname
+      importing
+        jobcount         = d_jobcount
+      exceptions
+        cant_create_job  = 1
+        invalid_job_data = 2
+        jobname_missing  = 3
+        others           = 4.
+
+    if sy-subrc ne 0.
+      message s368(00) with 'ERROR CREATING JOB'
+      sy-subrc.
+      exit.
+    endif.
+
+    "Build variant name for the job"
+
+    l_variant_name = l_s_bdlstab-variantname.
+
+    call function 'JOB_SUBMIT'
+      exporting
+        authcknam = 'KRISHNA'
+        jobcount  = d_jobcount
+        jobname   = d_jobname
+        report    = 'RBDLSMAP'
+        variant   = l_variant_name
+      exceptions
+        others    = 01.
+
+
+    call function 'JOB_CLOSE'
+      exporting
+        jobcount          = d_jobcount
+        jobname           = d_jobname
+        strtimmed         = 'X' " IMMEDIATE
+      exceptions
+        invalid_startdate = 1
+        jobname_missing   = 2
+        job_close_failed  = 3
+        job_nosteps       = 4
+        job_notex         = 5
+        lock_failed       = 6
+        others            = 7.
+
+    if sy-subrc > 0.
+      message s368(00) with 'CLOSING JOB FAILED'
+      sy-subrc.
+      exit.
+    endif.
+
+
+
+  endloop.
+
+  message s368(00) with 'BDLS Jobs scheduled'.
+
+form selection_screen_text.
+** Populate the data in BDLS table
+    commtab = 'Enter BDLS Table Codes(@=All or ABCD...)'.
+endform.
